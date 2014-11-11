@@ -733,6 +733,12 @@ Attempt to resume an interrupted multi-part upload.
 Does not work in combination with --stdin, and
 requires bookkeeping to be enabled.
 (not implemented yet)''')
+    parser_upload.add_argument('--retry', action='store_true',
+        help='''\
+Attempt to resume an interrupted multi-part upload
+if an error occurs during transmission of any of its
+parts.
+Bookkeeping is NOT required or used.''')
     parser_upload.add_argument('--bacula', action='store_true',
         help='''\
 The (single!) file name will be parsed using Bacula's
