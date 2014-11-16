@@ -935,7 +935,7 @@ using %s MB parts to upload." % part_size)
     @log_class_call("Uploading archive.",
                     "Upload of archive finished.")
     def upload(self, vault_name, file_name, description, region,
-               stdin, alternative_name, part_size, uploadid, resume):
+               stdin, alternative_name, part_size, uploadid, resume, retry):
         """
         Uploads a file to Amazon Glacier.
 
@@ -952,12 +952,17 @@ using %s MB parts to upload." % part_size)
         :param part_size: the size (in MB) of the blocks to upload.
         :type part_size: int
 
-        :returns: Tupple of (archive_id, sha256hash)
+	:returns: Tupple of (archive_id, sha256hash)
         :rtype: tupple
         :raises: :py:exc:`glacier.glacierexception.InputException`,
                  :py:exc:`glacier.glacierexception.ResponseException`
         """
-
+        
+        print '>> GlacierWrapper.upload(...)'
+        print 'RETRY    ? %s' % (retry)
+	print 'UPLOADID ? %s' % (uploadid)
+	#return
+        
         # Switch off debug logging for boto, as otherwise it's
         # filling up the log with the data sent!
         if self.logger.getEffectiveLevel() == 10:
@@ -1027,10 +1032,13 @@ using %s MB parts to upload." % part_size)
         # try to resume uploading.
         upload = None
         if uploadid:
-            uploads = self.listmultiparts(vault_name)
+	    print 'Looking for existing in-progress uploadid %s : ' % (uploadid)
+	    uploads = self.listmultiparts(vault_name)
             for upload in uploads:
+                print 'Considering %s' % (upload['MultipartUploadId'])
                 if uploadid == upload['MultipartUploadId']:
-                    self.logger.debug('Found a matching upload id. Continuing upload resumption attempt.')
+		    print 'Thats it!'
+		    self.logger.debug('Found a matching upload id. Continuing upload resumption attempt.')
                     self.logger.debug(upload)
                     part_size_in_bytes = upload['PartSizeInBytes']
                     break
@@ -1040,10 +1048,14 @@ using %s MB parts to upload." % part_size)
                     code='IdError')
 
         # Initialise the writer task.
+        print 'UPLOADID IS NOW: %s' % (uploadid)
+        print 'About to create a GlacierWriter ...'
         writer = GlacierWriter(self.glacierconn, vault_name, description=description,
                                part_size_in_bytes=part_size_in_bytes, uploadid=uploadid, logger=self.logger)
+	print 'UPLOADID IS NOW: %s' % (writer.uploadid)
 
         if upload:
+	    print 'Continuing an existing multipart upload: will check all parts sent against the local file pieces.'
             marker = None
             while True:
 
@@ -1138,6 +1150,9 @@ using %s MB parts to upload." % part_size)
                       % (self._size_fmt(writer.uploaded_size))
 
             self._progress(msg)
+
+	print 'About to begin sending parts to AWS ...'
+	#return
 
         # Read file in parts so we don't fill the whole memory.
         start_time = current_time = previous_time = time.time()

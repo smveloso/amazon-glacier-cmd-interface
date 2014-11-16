@@ -150,9 +150,13 @@ def handle_errors(fn):
     """
     Decorator for exception handling.
     """
+    
+    print '>> handle_errors(fn)'
+    
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        try:
+	print '>> handle_errors:wrapper(*args,**kwargs)'
+	try:
             return fn(*args, **kwargs)
         except GlacierException as e:
 
@@ -273,7 +277,18 @@ def upload(args):
     """
     Upload a file or a set of files to a Glacier vault.
     """
-
+    print '>> glacier.py:upload(args)'
+    
+    print "RETRY? %s" % (args.retry) 
+    
+    # args is a Namespace
+    #for dArg in args:
+    #  print "ARG: %s\n" % (dArg)
+    #
+    
+    #raise Exception("STOP HERE")
+    #return
+    
     # See if we got a bacula-style file set.
     # This is /path/to/vol001|vol002|vol003
     if args.bacula:
@@ -287,7 +302,10 @@ def upload(args):
             args.filename = [fileset[0]]
             args.filename += [os.path.join(dirname, fileset[i]) for i in range(1, len(fileset))]
 
+    print 'About to create the GlacierWrapper ...'
     glacier = default_glacier_wrapper(args)
+    print glacier
+    #return
     results = []
 
     # If we have one or more file names, they appear in a list.
@@ -298,6 +316,9 @@ def upload(args):
     if args.filename:
         for f in args.filename:
     
+	    print 'Processing file %s' % (f)
+	    #return
+    
             # In case the shell does not expand wildcards, if any, do this here.
             if f[0] == '~':
                 f = os.path.expanduser(f)
@@ -305,8 +326,10 @@ def upload(args):
             globbed = glob.glob(f)
             if globbed:
                 for g in globbed:
+		    print '---- going in ----> About to call glacier(wrapper).upload(...)'
                     response = glacier.upload(args.vault, g, args.description, args.region, args.stdin,
-                                              args.name, args.partsize, args.uploadid, args.resume)
+                                              args.name, args.partsize, args.uploadid, args.resume, args.retry)
+                    print '<--- coming out ---'
                     results.append({"Uploaded file": g,
                                     "Created archive with ID": response[0],
                                     "Archive SHA256 tree hash": response[1]})
@@ -932,6 +955,9 @@ at hand.''')
     args.logtostdout = logtostdout
     
     # Run the subcommand.
+    print 'About to invoke args.func(args) ...'
+    print args
+    print args.func
     args.func(args)
 
 if __name__ == "__main__":
