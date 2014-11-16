@@ -169,7 +169,7 @@ class GlacierWriter(object):
         self.uploaded_size += len(data)
 
     def close(self):
-        
+        print '>> writer.close(self)'
         if self.closed:
             return
             
