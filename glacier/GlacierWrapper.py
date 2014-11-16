@@ -1103,7 +1103,8 @@ using %s MB parts to upload." % part_size)
                     # Note that data is the byte chunk read locally from the file!
                     data = reader.read(stop-start) if reader else mmapped_file[start:stop]
                     if data:
-                        print 'FS#97 skipping hash comparison for now.'
+                        a = 1
+                        #print 'FS#97 skipping hash comparison for now.'
                         #
                         # Note that:
                         #    
