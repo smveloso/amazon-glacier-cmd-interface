@@ -1100,9 +1100,16 @@ using %s MB parts to upload." % part_size)
                     # If no data or hash mismatch, stop checking raise an
                     # exception.
                     data = None
+                    # Note that data is the byte chunk read locally from the file!
                     data = reader.read(stop-start) if reader else mmapped_file[start:stop]
                     if data:
                         print 'FS#97 skipping hash comparison for now.'
+                        #
+                        # Note that:
+                        #    
+                        #    part['SHA256TreeHash'] has already been received in the single call to glacier for the parts list
+                        #    glaciercorecalls.tree_hash(...) is a !LOCAL! computation of the local data's treehash !!!
+                        #
                         #data_hash = glaciercorecalls.tree_hash(glaciercorecalls.chunk_hashes(data))
                         #if glaciercorecalls.bytes_to_hex(data_hash) == part['SHA256TreeHash']:
                         #    self.logger.debug('Part %s hash matches.'% part['RangeInBytes'])
