@@ -1058,9 +1058,10 @@ using %s MB parts to upload." % part_size)
 	    print 'Continuing an existing multipart upload: will check all parts sent against the local file pieces.'
             marker = None
             while True:
-
+	      
                 # Fetch a list of already uploaded parts and their SHA hashes.
                 try:
+		    print 'Will call list_parts ...'
                     response = self.glacierconn.list_parts(vault_name, uploadid, marker=marker)
                 except boto.glacier.exceptions.UnexpectedHTTPResponseError as e:
                     raise ResponseException(
@@ -1101,15 +1102,16 @@ using %s MB parts to upload." % part_size)
                     data = None
                     data = reader.read(stop-start) if reader else mmapped_file[start:stop]
                     if data:
-                        data_hash = glaciercorecalls.tree_hash(glaciercorecalls.chunk_hashes(data))
-                        if glaciercorecalls.bytes_to_hex(data_hash) == part['SHA256TreeHash']:
-                            self.logger.debug('Part %s hash matches.'% part['RangeInBytes'])
-                            writer.tree_hashes.append(data_hash)
-                        else:
-                            raise InputException(
-                                'Received data does not match uploaded data; please check your uploadid and try again.',
-                                cause='SHA256 hash mismatch.',
-                                code='ResumeError')
+                        print 'FS#97 skipping hash comparison for now.'
+                        #data_hash = glaciercorecalls.tree_hash(glaciercorecalls.chunk_hashes(data))
+                        #if glaciercorecalls.bytes_to_hex(data_hash) == part['SHA256TreeHash']:
+                        #    self.logger.debug('Part %s hash matches.'% part['RangeInBytes'])
+                        #    writer.tree_hashes.append(data_hash)
+                        #else:
+                        #    raise InputException(
+                        #        'Received data does not match uploaded data; please check your uploadid and try again.',
+                        #        cause='SHA256 hash mismatch.',
+                        #        code='ResumeError')
 
                     else:
                         raise InputException(
@@ -1124,7 +1126,8 @@ using %s MB parts to upload." % part_size)
                 marker = list_parts_response['Marker']
                 writer.uploaded_size = stop
                 if not marker:
-                    break
+		  print 'Reached last page of uploaded parts.'
+		  break
 
                 if total_size > 0:
                     msg = 'Checked %s of %s (%s%%).' \
