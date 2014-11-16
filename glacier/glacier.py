@@ -23,6 +23,8 @@ from GlacierWrapper import GlacierWrapper
 from functools import wraps
 from glacierexception import *
 
+from boto.glacier.exceptions import UnexpectedHTTPResponseError
+
 def output_headers(headers, output):
     """
     Prints a list of headers - single item output.
@@ -326,13 +328,22 @@ def upload(args):
             globbed = glob.glob(f)
             if globbed:
                 for g in globbed:
-		    print '---- going in ----> About to call glacier(wrapper).upload(...)'
-                    response = glacier.upload(args.vault, g, args.description, args.region, args.stdin,
-                                              args.name, args.partsize, args.uploadid, args.resume, args.retry)
-                    print '<--- coming out ---'
-                    results.append({"Uploaded file": g,
-                                    "Created archive with ID": response[0],
-                                    "Archive SHA256 tree hash": response[1]})
+                    retryCount = -1
+                    keepTrying = args.retry
+                    while keepTrying:
+		      try:
+			retryCount = retryCount + 1
+			print 'retryCount is now %d' % retryCount
+			print '---> Calling glacier(wrapper).upload(...)'
+			response = glacier.upload(args.vault, g, args.description, args.region, args.stdin,
+						  args.name, args.partsize, args.uploadid, args.resume, args.retry)
+			print '<--- Returned from glacier(wrapper) OK'
+			results.append({"Uploaded file": g,
+					"Created archive with ID": response[0],
+					"Archive SHA256 tree hash": response[1]})
+			keepTrying = False
+		      except UnexpectedHTTPResponseError:
+			print 'Will RETRY after boto.glacier.exceptions.UnexpectedHTTPResponseError'
             else:
                 raise InputException(
                     "File name given for upload can not be found: %s."% f,

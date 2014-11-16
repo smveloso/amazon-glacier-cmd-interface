@@ -1169,6 +1169,7 @@ using %s MB parts to upload." % part_size)
             if not part:
                 break
 
+	    #print '++ writer.write(part)' 
             writer.write(part)
             current_time = time.time()
             overall_rate = int((writer.uploaded_size-start_bytes)/(current_time - start_time))
